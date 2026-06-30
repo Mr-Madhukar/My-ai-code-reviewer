@@ -74,9 +74,29 @@ const PLANS = [
 
 export default async function BillingPage() {
   const session = await requireAuth();
-  const subscription = await getUserSubscription(session.user.id);
-  const currentPlan = subscription.plan;
-  const planDetails = PLAN_DETAILS[currentPlan];
+  
+  let subscription;
+  let currentPlan: "free" | "pro" = "free";
+  let planDetails = PLAN_DETAILS.free;
+  let errorMsg: string | null = null;
+
+  try {
+    subscription = await getUserSubscription(session.user.id);
+    currentPlan = subscription.plan;
+    planDetails = PLAN_DETAILS[currentPlan];
+  } catch (error) {
+    console.error("[BillingPage] Error loading user subscription:", error);
+    errorMsg = error instanceof Error ? error.message : "Failed to load subscription details.";
+    subscription = {
+      plan: "free" as const,
+      status: "active" as const,
+      renewsAt: null,
+      usage: {
+        reviewsUsed: 0,
+        reposConnected: 0,
+      }
+    };
+  }
 
   return (
     <>
@@ -84,6 +104,12 @@ export default async function BillingPage() {
         title="Billing"
         description="Manage your subscription plan and track usage."
       />
+      {errorMsg && (
+        <div className="mx-6 mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive-foreground">
+          <p className="font-semibold">Unable to load live billing details</p>
+          <p className="text-xs opacity-80 mt-1">{errorMsg}</p>
+        </div>
+      )}
       <div className="flex flex-col gap-6 p-6">
         {/* Current Plan & Usage */}
         <div className="grid gap-4 md:grid-cols-3">

@@ -8,7 +8,6 @@
  */
 
 import { FREE_MONTHLY_LIMIT, getMonthStart } from "@/features/billing/lib/limits";
-import { getUserSubscription } from "@/features/billing/server/subscription";
 import { prisma } from "@/lib/db";
 
 /** Review count plus optional limit for display on the settings page. */
@@ -58,10 +57,13 @@ export async function getReviewsThisMonth(userId: string): Promise<number> {
  * @returns `true` if Pro (active) or free tier still has quota remaining.
  */
 export async function canUserReview(userId: string): Promise<boolean> {
-  const subscription = await getUserSubscription(userId);
+  const workspace = await getActiveWorkspaceForUser(userId);
+  if (!workspace) {
+    return false;
+  }
 
   // Pro with an active subscription — no monthly cap.
-  if (subscription.plan === "pro" && subscription.status === "active") {
+  if (workspace.plan === "pro" && workspace.subscriptionStatus === "active") {
     return true;
   }
 
@@ -76,10 +78,10 @@ export async function canUserReview(userId: string): Promise<boolean> {
  * @returns `{ used, limit }` where `limit` is `null` for unlimited Pro.
  */
 export async function getUsageSummary(userId: string): Promise<UsageSummary> {
-  const subscription = await getUserSubscription(userId);
+  const workspace = await getActiveWorkspaceForUser(userId);
   const used = await getReviewsThisMonth(userId);
 
-  if (subscription.plan === "pro" && subscription.status === "active") {
+  if (workspace && workspace.plan === "pro" && workspace.subscriptionStatus === "active") {
     return { used, limit: null };
   }
 

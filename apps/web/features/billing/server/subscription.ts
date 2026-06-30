@@ -103,7 +103,10 @@ export async function getUserSubscription(
 
   let renewsAt: string | null = null;
   if (workspace.subscriptionRenewsAt) {
-    renewsAt = workspace.subscriptionRenewsAt.toISOString();
+    const d = new Date(workspace.subscriptionRenewsAt);
+    if (!isNaN(d.getTime())) {
+      renewsAt = d.toISOString();
+    }
   }
 
   // Fetch usage statistics
