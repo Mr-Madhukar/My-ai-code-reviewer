@@ -10,6 +10,8 @@ import { organization } from "better-auth/plugins";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { db } from "@shipflow/db";
 
+import { nextCookies } from "better-auth/next-js";
+
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
 
@@ -20,6 +22,10 @@ export const auth = betterAuth({
     github: {
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      mapProfileToUser: (profile) => ({
+        email: profile.email ?? `${profile.id}@users.noreply.github.com`,
+        name: profile.name ?? profile.login,
+      }),
     },
   },
 
@@ -29,6 +35,7 @@ export const auth = betterAuth({
       // Allow users to create organizations
       allowUserToCreateOrganization: true,
     }),
+    nextCookies(),
   ],
 
   session: {

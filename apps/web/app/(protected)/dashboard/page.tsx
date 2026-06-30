@@ -10,10 +10,21 @@ import type { Metadata } from "next";
 import { DashboardHeader } from "@/features/dashboard/components/dashboard-header";
 import { OverviewContent } from "@/features/dashboard/components/overview-content";
 import { getOverview } from "@/features/overview/server/get-overview";
+import type { OverviewData } from "@/features/overview/types/overview";
 import { requireAuth } from "@/lib/auth-session";
 
 export const metadata: Metadata = {
   title: "Overview · Dashboard",
+};
+
+/** Fallback overview shown when the data fetch fails. */
+const FALLBACK_OVERVIEW: OverviewData = {
+  installation: { connected: false, accountLogin: null, installedAt: null },
+  reviewsUsed: 0,
+  reviewsLimit: 5,
+  plan: "free",
+  recentActivity: [],
+  repos: null,
 };
 
 /**
@@ -23,7 +34,19 @@ export const metadata: Metadata = {
  */
 export default async function DashboardOverviewPage() {
   const session = await requireAuth();
-  const overview = await getOverview(session.user.id);
+
+  let overview: OverviewData;
+
+  try {
+    overview = await getOverview(session.user.id);
+  } catch (error) {
+    console.error(
+      "[DashboardOverviewPage] Failed to load overview for user:",
+      session.user.id,
+      error,
+    );
+    overview = FALLBACK_OVERVIEW;
+  }
 
   return (
     <>
@@ -35,3 +58,4 @@ export default async function DashboardOverviewPage() {
     </>
   );
 }
+

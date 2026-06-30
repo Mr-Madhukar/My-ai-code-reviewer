@@ -23,8 +23,20 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await requireAuth();
-  const subscription = await getUserSubscription(session.user.id);
-  const planLabel = PLAN_DETAILS[subscription.plan].label;
+
+  let planLabel = "Free";
+
+  try {
+    const subscription = await getUserSubscription(session.user.id);
+    planLabel = PLAN_DETAILS[subscription.plan].label;
+  } catch (error) {
+    console.error(
+      "[DashboardLayout] Failed to load subscription for user:",
+      session.user.id,
+      error,
+    );
+    // Fallback to "Free" label rather than crashing the whole layout
+  }
 
   return (
     <QueryProvider>
