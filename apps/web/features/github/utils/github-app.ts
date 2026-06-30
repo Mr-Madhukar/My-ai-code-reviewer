@@ -14,6 +14,21 @@ import { App } from "octokit";
 let githubApp: App | null = null;
 
 /**
+ * Cleans the private key string from common environment variable malformation
+ * (e.g. escaped newlines, trailing slashes, bad double-quoting).
+ */
+function sanitizePrivateKey(key: string): string {
+  if (!key) return "";
+  // Strip outer quotes and whitespace
+  let cleanKey = key.trim().replace(/^['"]|['"]$/g, "").trim();
+  // Convert escaped newlines
+  cleanKey = cleanKey.replace(/\\n/g, "\n");
+  // Remove trailing slashes and leftover quotes
+  cleanKey = cleanKey.replace(/\\+$/, "").trim().replace(/['"]$/, "").trim();
+  return cleanKey;
+}
+
+/**
  * Returns the shared GitHub App client used for API calls and webhook verification.
  *
  * The App is configured with:
@@ -24,10 +39,10 @@ let githubApp: App | null = null;
  */
 export function getGithubApp(): App {
   if (!githubApp) {
-    // GitHub stores multi-line keys as `\n` in env vars; convert them back to real newlines.
+    const rawKey = process.env.GITHUB_APP_PRIVATE_KEY!;
     githubApp = new App({
       appId: process.env.GITHUB_APP_ID!,
-      privateKey: process.env.GITHUB_APP_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+      privateKey: sanitizePrivateKey(rawKey),
       webhooks: { secret: process.env.GITHUB_WEBHOOK_SECRET! },
     });
   }
