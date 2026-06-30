@@ -16,7 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { statusButtonClass } from "@/features/dashboard/lib/status-styles";
-import { startProSubscription } from "@/lib/actions/billing";
+import { startProSubscription, verifyProSubscription } from "@/lib/actions/billing";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -66,10 +66,36 @@ export function UpgradeButton() {
         subscription_id: subscriptionId,
         name: "Chai Code Reviewer",
         description: "Pro plan — unlimited AI reviews",
-        handler: () => {
-          // Payment UI closed successfully — webhook will flip plan to Pro shortly.
-          toast.success("Payment successful! Your Pro plan will activate shortly.");
-          router.refresh();
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_subscription_id: string;
+          razorpay_signature: string;
+        }) => {
+          setLoading(true);
+          const promise = verifyProSubscription({
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_subscription_id: response.razorpay_subscription_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+
+          toast.promise(promise, {
+            loading: "Activating your Pro plan...",
+            success: () => {
+              router.refresh();
+              return "Your account is now Pro! Enjoy unlimited reviews.";
+            },
+            error: (err) => {
+              return err instanceof Error ? err.message : "Failed to activate Pro plan.";
+            },
+          });
+
+          try {
+            await promise;
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setLoading(false);
+          }
         },
       });
 
