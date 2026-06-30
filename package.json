@@ -1,0 +1,36 @@
+{
+  "name": "shipflow-ai",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -k \"turbo dev\" \"pnpm run tunnel\" \"npx inngest-cli@latest dev\"",
+    "tunnel": "ngrok start --config ngrok.yml shipflow",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "db:generate": "turbo db:generate",
+    "db:push": "turbo db:push",
+    "db:migrate": "turbo db:migrate",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "predev": "taskkill /F /IM ngrok.exe 2>nul || exit 0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "concurrently": "^10.0.3",
+    "turbo": "^2.5.0",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@11.0.9",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "protobufjs",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
+  "dependencies": {
+    "@better-auth/infra": "^0.3.4"
+  }
+}
