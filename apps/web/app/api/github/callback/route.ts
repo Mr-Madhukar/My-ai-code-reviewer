@@ -37,7 +37,14 @@ function buildSignInCallbackUrl(installationId: string | null): string {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const installationId = searchParams.get("installation_id");
-  const session = await getServerSession();
+  let session;
+
+  try {
+    session = await getServerSession();
+  } catch (authError) {
+    console.error("[GitHub Callback] Auth session retrieval failed:", authError);
+    return new Response("Authentication failed", { status: 500 });
+  }
 
   // Must be signed in to associate the installation with a user account
   if (!session) {
@@ -46,7 +53,19 @@ export async function GET(request: Request) {
   }
 
   if (installationId) {
-    await saveInstallation(session.user.id, Number(installationId));
+    try {
+      await saveInstallation(session.user.id, Number(installationId));
+    } catch (saveError) {
+      console.error(
+        `[GitHub Callback] Failed to save installation ${installationId} for user ${session.user.id}:`,
+        saveError
+      );
+      // Return a descriptive error page or text instead of crashing with a generic 500
+      return new Response(
+        `Failed to save GitHub App installation. Error: ${saveError instanceof Error ? saveError.message : String(saveError)}`,
+        { status: 500 }
+      );
+    }
   }
 
   redirect(DASHBOARD_ROUTES.github);
