@@ -75,7 +75,7 @@ export async function verifyProSubscription(payload: {
   }
 
   // 1. Generate expected signature
-  const text = `${payload.razorpay_subscription_id}|${payload.razorpay_payment_id}`;
+  const text = `${payload.razorpay_payment_id}|${payload.razorpay_subscription_id}`;
   const expectedSignature = createHmac("sha256", secret)
     .update(text)
     .digest("hex");
